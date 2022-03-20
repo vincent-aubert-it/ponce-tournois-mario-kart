@@ -1,4 +1,3 @@
-const _ = require('lodash');
 const db = require('../models');
 const { getPonce, getUser, canUserManage } = require('../utils');
 
