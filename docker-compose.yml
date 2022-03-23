@@ -1,0 +1,95 @@
+services:
+  api:
+    build:
+      context: ./api
+    container_name: ptmk_api
+    volumes:
+      - ./api:/var/app
+    environment:
+      - PORT=3001
+      - DB_HOST=mysql.ptmk.local
+      - DB_PORT=3306
+      - DB_NAME=ponce-tournois-mario-kart
+      - DB_USER=root
+      - DB_PWD=secret
+      - DB_DIALECT=mysql
+      - REDIS_URL=redis://redis.ptmk.local:6379
+      - WEB_CLIENT_URL=http://localhost:3000
+      - SECRET=secretSalt
+    ports:
+      - 3001:3001
+    networks:
+      - ptmk
+
+  client:
+    build:
+      context: ./web-client
+    container_name: ptmk_client
+    volumes:
+      - ./web-client:/var/app
+    environment:
+      - NODE_OPTIONS=--openssl-legacy-provider
+      - PORT=3000
+      - REACT_APP_API_URL=http://localhost:3001
+    ports:
+      - 3000:3000
+    networks:
+      - ptmk
+
+  ### STORAGE / DB ###
+  redis:
+    image: 'bitnami/redis:latest'
+    container_name: ptmk_redis
+    expose:
+      - 6379
+    environment:
+      - ALLOW_EMPTY_PASSWORD=yes
+    volumes:
+      - ./docker/.cache/redis:/bitnami/redis/data
+    networks:
+      ptmk:
+        aliases:
+          - redis.ptmk.local
+
+  db:
+    image: mysql:5
+    container_name: ptmk_db
+    expose:
+      - 3306
+    ports:
+      - 3308:3306 # To connect database with external tool
+    volumes:
+      - mysql:/var/lib/mysql
+      - ./docker/mysql/my.cnf:/etc/mysql/conf.d/my.cnf
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d
+    environment:
+      MYSQL_ROOT_PASSWORD: secret
+      MYSQL_USER: app
+      MYSQL_PASSWORD: secret
+    networks:
+      ptmk:
+        aliases:
+          - mysql.ptmk.local
+
+  ### TOOLS ###
+  redis-commander:
+    image: rediscommander/redis-commander
+    container_name: ptmk_redis-commander
+    depends_on:
+      - redis
+    expose:
+      - 8081
+    ports:
+      - 8081:8081
+    volumes:
+      - $PWD/docker/redis_commander/config/config.json:/redis-commander/config/local.json
+    networks:
+      - ptmk
+
+networks:
+  ptmk:
+    name: ptmk
+    driver: bridge
+
+volumes:
+  mysql:
