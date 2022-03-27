@@ -1,8 +1,8 @@
 #!/bin/sh
 . "$(dirname "$0")/_/husky.sh"
 
-cd ./api
+cd ./api || exit
 npm run lint
 
-cd ../web-client/client 
+cd ../web-client/client || exit
 npm run lint
